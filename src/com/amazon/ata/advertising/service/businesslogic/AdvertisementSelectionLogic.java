@@ -90,7 +90,7 @@ public class AdvertisementSelectionLogic {
                     }
                 }
                 return false;
-            }).toList());
+            }).collect(Collectors.toList()));
             if (CollectionUtils.isNotEmpty(eligibleAds)) {
                 AdvertisementContent randomAdvertisementContent = eligibleAds.get(random.nextInt(eligibleAds.size()));
                 generatedAdvertisement = new GeneratedAdvertisement(randomAdvertisementContent);
