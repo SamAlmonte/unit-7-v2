@@ -5,6 +5,10 @@ import com.amazon.ata.advertising.service.targeting.predicate.TargetingPredicate
 import com.amazon.ata.advertising.service.targeting.predicate.TargetingPredicateResult;
 
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
 /**
@@ -12,8 +16,10 @@ import java.util.stream.Stream;
  */
 public class TargetingEvaluator {
     public static final boolean IMPLEMENTED_STREAMS = true;
-    public static final boolean IMPLEMENTED_CONCURRENCY = false;
+    public static final boolean IMPLEMENTED_CONCURRENCY = true;
     private final RequestContext requestContext;
+
+    private ExecutorService executor = Executors.newCachedThreadPool();
 
     /**
      * Creates an evaluator for targeting predicates.
@@ -33,14 +39,14 @@ public class TargetingEvaluator {
         List<TargetingPredicate> targetingPredicates = targetingGroup.getTargetingPredicates();
         Stream<TargetingPredicate> dataStream = targetingPredicates.stream();
         
-        boolean allTruePredicates = true;
+/*        boolean allTruePredicates = true;
         for (TargetingPredicate predicate : targetingPredicates) {
             TargetingPredicateResult predicateResult = predicate.evaluate(requestContext);
             if (!predicateResult.isTrue()) {
                 allTruePredicates = false;
                 break;
             }
-        }
+        }*/
 /*        dataStream.filter(predicate -> {
             TargetingPredicateResult predicateResult = predicate.evaluate(requestContext);
             if (!predicateResult.isTrue()) {
@@ -49,8 +55,22 @@ public class TargetingEvaluator {
             return true;
         });*/
         boolean allTruePredicates1 = dataStream.allMatch(predicate -> {
-            TargetingPredicateResult predicateResult = predicate.evaluate(requestContext);
-            return predicateResult.isTrue();
+            TargetingPredicateResult predicateResult = TargetingPredicateResult.FALSE;
+            Callable<TargetingPredicateResult> myCallable = () -> {
+                // Code for the task to be executed asynchronously
+                return predicate.evaluate(requestContext);
+            };
+            Future<TargetingPredicateResult> myFuture = executor.submit(myCallable);
+            try {
+                predicateResult = myFuture.get();
+                return predicateResult.isTrue();
+            } catch (Exception e){
+                System.out.println("exception thrown");
+            }
+            if(predicateResult.equals(TargetingPredicateResult.TRUE))
+                return true;
+            else
+                return false;
         });
 
 
