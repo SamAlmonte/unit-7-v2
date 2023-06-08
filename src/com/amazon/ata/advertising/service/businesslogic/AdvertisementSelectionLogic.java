@@ -68,10 +68,11 @@ public class AdvertisementSelectionLogic {
             LOG.warn("MarketplaceId cannot be null or empty. Returning empty ad.");
         } else {
             final List<AdvertisementContent> contents = contentDao.get(marketplaceId);
+            TreeMap<Double, AdvertisementContent> balancedTree = new TreeMap<>();
             //Stream<AdvertisementContent> streamData = contents.stream();
             TargetingEvaluator targetingEvaluator = new TargetingEvaluator(new RequestContext(customerId, marketplaceId));
             //List<AdvertisementContent> validContents = new ArrayList<>();
-            List<AdvertisementContent> eligibleAds = new ArrayList<>();
+            List<AdvertisementContent> eligibleAds;
 /*            for (AdvertisementContent content: contents){
                 if(content.getContentId() != null){
                     List<TargetingGroup> targetingGroup1 = targetingGroupDao.get(content.getContentId());
@@ -87,14 +88,22 @@ public class AdvertisementSelectionLogic {
                     List<TargetingGroup> targetingGroups = targetingGroupDao.get(content.getContentId());
                     for(TargetingGroup targetingGroup: targetingGroups){
                         if(targetingEvaluator.evaluate(targetingGroup).isTrue()){
+                            balancedTree.put(targetingGroup.getClickThroughRate(), content);
                             return true;
                         }
                     }
                 }
                 return false;
             }).collect(Collectors.toList()));
-            if (CollectionUtils.isNotEmpty(eligibleAds)) {
-                AdvertisementContent randomAdvertisementContent = eligibleAds.get(random.nextInt(eligibleAds.size()));
+            //Comparator<AdvertisementContent> comparator = (s1, s2) -> s2.get
+            //eligibleAds.sort();
+//            if (CollectionUtils.isNotEmpty(eligibleAds)) {
+//                AdvertisementContent randomAdvertisementContent = eligibleAds.get(random.nextInt(eligibleAds.size()));
+//                generatedAdvertisement = new GeneratedAdvertisement(randomAdvertisementContent);
+//            }
+            if (!balancedTree.isEmpty()) {
+                Double firstKey = balancedTree.lastKey();
+                AdvertisementContent randomAdvertisementContent = balancedTree.get(firstKey);
                 generatedAdvertisement = new GeneratedAdvertisement(randomAdvertisementContent);
             }
 
